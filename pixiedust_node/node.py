@@ -211,6 +211,7 @@ class Node(NodeBase):
         #print ("Node process id", self.ps.pid)
 
         # watch Python variables for changes
+        global get_ipython  # placates linters like PyLint and Flake8
         self.vw = VarWatcher(get_ipython(), self.ps)
 
         # create thread to read this process's output
