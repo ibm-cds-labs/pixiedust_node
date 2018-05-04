@@ -18,7 +18,7 @@ RESERVED = ['true', 'false','self','this','In','Out']
 
 try:
     VARIABLE_TYPES = (str, int, float, bool, unicode, dict, list)
-except:
+except NameError:
     # Python 3 => no unicode type
     VARIABLE_TYPES = (str, int, float, bool, dict, list)
 
