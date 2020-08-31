@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -8,11 +7,14 @@ import hashlib
 from functools import partial
 from threading import Thread, Event
 
+import tempfile
 import IPython
 import pandas
+import numpy as np
 from pixiedust.display import display
 from pixiedust.utils.environment import Environment
 from pixiedust.utils.shellAccess import ShellAccess
+
 
 RESERVED = ['true', 'false','self','this','In','Out']
 
@@ -34,6 +36,11 @@ class VarWatcher(object):
         self.ps = ps
         ip.events.register('post_execute', self.post_execute)
         self.clearCache()
+        try:
+            self._np_home = tempfile.gettempdir() +'/'
+        except E as Exception:
+            print("Did not succeed in finding temp directory because: ", E)
+        self.ps.stdin.write("var _np_home = '" + self._np_home + "';\r\n");
 
     def clearCache(self):
         self.cache = {}
@@ -53,13 +60,23 @@ class VarWatcher(object):
         for key in self.shell.user_ns:
             v = self.shell.user_ns[key]
             t = type(v)
-            # if this is one of our varables, is a number or a string or a float
+            # if this is one of our variables, is a number or a string or a float
             if not key.startswith('_') and (not key in RESERVED) and (t in VARIABLE_TYPES):
                 # if it's not in our cache or it is an its value has changed
                 if not key in self.cache or not self.inCache(key, v):
                     # move it to JavaScript land and add it to our cache
-                    self.ps.stdin.write("var " + key + " = " + json.dumps(v) + ";\r\n")
+                    dumped = json.dumps(v)
+                    self.ps.stdin.write("var " + key + " = " + dumped + ";\r\n")
                     self.setCache(key, v)
+            elif not key.startswith('_') and (not key in RESERVED) and (t == np.ndarray) and (v.size > 0):
+                np_hash = str(v.data.tobytes())
+                if not key in self.cache or not self.inCache(key, np_hash):
+                    loc = self._np_home + key + '.npy'
+                    if os.path.exists(loc):
+                        os.remove(loc)
+                    np.save(loc, v)
+                    self.ps.stdin.write("var " + key + " = readNumpyFile( '" + loc + "' );\r\n");
+                    self.setCache(key, np_hash);
 
 class NodeStdReader(Thread):
     """
@@ -82,12 +99,10 @@ class NodeStdReader(Thread):
         self._stop_event.set()
 
     def run(self):
-
         # forever
         while not self._stop_event.is_set():
             # read line from Node's stdout
             line = self.ps.stdout.readline()
-
             # see if it parses as JSON
             obj = None
             try:
@@ -115,6 +130,15 @@ class NodeStdReader(Thread):
                             ShellAccess[obj['key']] = obj['value']
                             if self.vw:
                                 self.vw.setCache(obj['key'], obj['value'])
+                        elif obj['type'] == 'numpy':
+                            loc = obj['data']
+                            key = os.path.splitext(os.path.basename(loc))[0]
+                            #print(key , "has been overriden")
+                            v = np.load(loc)
+                            ShellAccess[key] = v
+                            if self.vw:
+                                np_hash = str(v.data.tobytes())
+                                self.vw.setCache(key, np_hash)
                     else:
                         print(line)
             except Exception as e:
@@ -206,7 +230,7 @@ class Node(NodeBase):
         super(Node, self).__init__()
 
         # process that runs the Node.js code
-        args = (self.node_path, path)
+        args = (self.node_path,'--max-old-space-size=10000', path)
         self.ps = self.popen(args)
         #print ("Node process id", self.ps.pid)
 
@@ -243,6 +267,7 @@ class Npm(NodeBase):
     """
     def __init__(self):
         super(Npm, self).__init__()
+        self.install( 'github:Kings-Distributed-Systems/npy-js' );
 
     # run an npm command
     def cmd(self, command, module):

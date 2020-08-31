@@ -1,10 +1,26 @@
+const Buffer = require('buffer').Buffer;
 const repl = require('repl');
 const pkg = require('./package.json');
 const crypto = require('crypto');
 const util = require('./util.js');
+const { readNumpyFile, writeNumpyFile } = require('npy-js');
+
+function abtostr(ab){
+  let binary = '';
+  var ui8 = new Uint8Array(ab);
+  const mss = 9999;
+  let segments = [];
+  let s = '';
+  for (let i = 0; i < ui8.length/mss; i++){
+    segments.push(String.fromCharCode.apply(null, ui8.slice( i * mss, (i+1) * mss)));
+  };
+  s = segments.join('');
+  return Buffer.from(s.toString(), 'binary').toString('base64');
+};
+
+
 
 const startRepl = function(instream, outstream) {
-
   // check for Node.js global variables and move those values to Python
   const globalVariableChecker = function() {
 
@@ -22,36 +38,51 @@ const startRepl = function(instream, outstream) {
     for(var i in varlist) {
 
       // turn it to JSON
-      const v = varlist[i];
-      const j = JSON.stringify(r.context[v]);
+      const v = varlist[i]; 
 
-      // if it's a string
-      if (typeof j === 'string' ) {
 
-        // calculate the md5(json)
-        const h = hash(j);
+      if (typeof r.context[v] !== 'undefined' && typeof r.context[v].constructor !== 'undefined' && r.context[v].constructor.name === 'DataArray'){
+        let key = v;
+        let location = r.context['_np_home'] + key + '.npy'; 
+        const h = hash(abtostr(r.context[v].typedArray.buffer));
+        if (lastGlobal[v] !== h){
+          writeNumpyFile(location, r.context[v]);
+          const obj = { _pixiedust: true, type: 'numpy', data: location }; 
+          outstream.write('\n' + JSON.stringify(obj) + '\n');
+          lastGlobal[v] = h;
+        };
 
-        // it it's different to what we had last time
-        if (lastGlobal[v] !== h) {
+      }else{
+        const j = JSON.stringify(r.context[v]);
 
-          // check to see if this is a simple data structure i.e.
-          // only migrate variables which equal to the JSON.parse'd version of their JSON.stringified selves
-          // i.e don't migrate objects that contain functions
-          if (util.deepEqual(JSON.parse(j), r.context[v])) {
+        // if it's a string
+        if (typeof j === 'string' ) {
 
-            // if we reached here, then we're going to move a variable from Node.js --> Python
-            
-            // calculate data type
-            const datatype = isArray(r.context[v]) && typeof r.context[v][0] === 'object' ? 'array' : typeof r.context[v];
-            
-            // make a special JSON object
-            const obj = { _pixiedust: true, type: 'variable', key: v, datatype: datatype, value: r.context[v] };
-            
-            // write it to stdout for the Python parser to find
-            outstream.write('\n' + JSON.stringify(obj) + '\n')
+          // calculate the md5(json)
+          const h = hash(j);
 
-            // store it in our lastGLobal dictionary - so that we only update it when the value changes
-            lastGlobal[v] = h;
+          // it it's different to what we had last time
+          if (lastGlobal[v] !== h) {
+
+            // check to see if this is a simple data structure i.e.
+            // only migrate variables which equal to the JSON.parse'd version of their JSON.stringified selves
+            // i.e don't migrate objects that contain functions
+            if (util.deepEqual(JSON.parse(j), r.context[v])) {
+
+              // if we reached here, then we're going to move a variable from Node.js --> Python
+              
+              // calculate data type
+              const datatype = isArray(r.context[v]) && typeof r.context[v][0] === 'object' ? 'array' : typeof r.context[v];
+              
+              // make a special JSON object
+              const obj = { _pixiedust: true, type: 'variable', key: v, datatype: datatype, value: r.context[v] };
+              
+              // write it to stdout for the Python parser to find
+              outstream.write('\n' + JSON.stringify(obj) + '\n')
+
+              // store it in our lastGLobal dictionary - so that we only update it when the value changes
+              lastGlobal[v] = h;
+            }
           }
         }
       }

@@ -13,6 +13,7 @@
   "author": "Glynn Bird <glynn.bird@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
+    "npy-js": "github:Kings-Distributed-Systems/npy-js"
   },
   "repository": {
     "type": "git",
