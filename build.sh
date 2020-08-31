@@ -1,3 +1,3 @@
 #!/bin/bash
 rm -rf build dist
-python setup.py sdist upload -r pypi
+python setup.py sdist #upload -r pypi
