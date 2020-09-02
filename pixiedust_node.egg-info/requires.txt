@@ -1,4 +1,0 @@
-pixiedust
-pandas
-ipython
-numpy
