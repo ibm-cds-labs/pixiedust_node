@@ -1,3 +1,4 @@
+import time
 import json
 import os
 import sys
@@ -5,7 +6,8 @@ import platform
 import subprocess
 import hashlib
 from functools import partial
-from threading import Thread, Event
+from threading import Thread, Event, Lock
+from .ReadWriteLock import ReadWriteLock
 
 import tempfile
 import IPython
@@ -15,6 +17,8 @@ from pixiedust.display import display
 from pixiedust.utils.environment import Environment
 from pixiedust.utils.shellAccess import ShellAccess
 
+doneNode = False
+doneLock = ReadWriteLock() 
 
 RESERVED = ['true', 'false','self','this','In','Out']
 
@@ -41,6 +45,8 @@ class VarWatcher(object):
             self._np_home = tempfile.gettempdir() +'/'
         except E as Exception:
             print("Did not succeed in finding temp directory because: ", E)
+
+    def setHome(self):
         self.n.write("var _np_home = '" + self._np_home + "';\r\n");
 
     def clearCache(self):
@@ -76,7 +82,7 @@ class VarWatcher(object):
                     if os.path.exists(loc):
                         os.remove(loc)
                     np.save(loc, v)
-                    self.n.write("var " + key + " = readNumpyFile( '" + loc + "' );\r\n");
+                    self.n.write("var " + key + " = require('npy-js').readNumpyFile( '" + loc + "' );\r\n");
                     self.setCache(key, np_hash);
 
 class NodeStdReader(Thread):
@@ -140,6 +146,12 @@ class NodeStdReader(Thread):
                             if self.vw:
                                 np_hash = str(v.data.tobytes()) + str(v.shape)
                                 self.vw.setCache(key, np_hash)
+                        elif obj['type'] == 'done':
+                            global doneNode
+                            global doneLock
+                            doneLock.acquire_write()
+                            doneNode = True
+                            doneLock.release_write()
                     else:
                         print(line)
             except Exception as e:
@@ -241,20 +253,37 @@ class Node(NodeBase):
         # create thread to read this process's output
         NodeStdReader(self.ps, self.vw)
 
+        self.vw.setHome()
+
     def terminate(self):
         self.ps.terminate()
 
     def write(self, s):
+        global doneNode
+        global doneLock
+        doneLock.acquire_write()
+        doneNode = False
+        doneLock.release_write()
         self.ps.stdin.write(s)
         self.ps.stdin.write("\r\n")
         self.ps.stdin.flush()
+        while True:
+            flag = False
+            doneLock.acquire_read()
+            flag = doneNode
+            doneLock.release_read()
+            if flag:
+                break
 
     def cancel(self):
         self.write("\r\n.break")
 
     def clear(self):
-        self.write("\r\n.clear")
+        self.write("\r\n.clear") 
         self.vw.clearCache()
+        #reset home location and reset np variables
+        self.vw.setHome()
+        self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile } = require('npy-js');")
 
     def help(self):
         self.cancel()

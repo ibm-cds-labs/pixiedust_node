@@ -6,6 +6,12 @@ const crypto = require('crypto');
 const util = require('./util.js');
 const { readNumpyFile, writeNumpyFile } = require('npy-js');
 
+const magicNumber = crypto.randomBytes(128).toString('hex');
+const magicNumberCommandBytes = Buffer.from( `console.log( '${magicNumber}' );\r\n` , 'utf8');
+
+
+
+
 function abtostr(ab){
   let binary = '';
   var ui8 = new Uint8Array(ab);
@@ -45,7 +51,7 @@ const startRepl = function(instream, outstream) {
       if (typeof r.context[v] !== 'undefined' && typeof r.context[v].constructor !== 'undefined' && r.context[v].constructor.name === 'DataArray'){
         let key = v;
         let location = r.context['_np_home'] + key + '.npy'; 
-        const h = hash(abtostr(r.context[v].typedArray.buffer));
+        const h = hash(abtostr(r.context[v].typedArray.buffer) + r.context[v].shape.toString());
         if (lastGlobal[v] !== h){
           writeNumpyFile(location, r.context[v]);
           const obj = { _pixiedust: true, type: 'numpy', data: location }; 
@@ -103,14 +109,24 @@ const startRepl = function(instream, outstream) {
 
   var outReplStream = new stream.Transform();
   outReplStream._transform = function (chunk, encoding, done){
+    if (!chunk.includes(magicNumber)){
+      this.push(chunk);
+    }else{
+      const obj = { _pixiedust: true, type: 'done' };
+      outstream.write('\n' + JSON.stringify(obj) + '\n');
+    }
+    done();
+  };
+
+  var inReplStream = new stream.Transform();
+  inReplStream._transform = function (chunk, encoding, done){
+    chunk = Buffer.concat([chunk, magicNumberCommandBytes]);
     this.push(chunk);
     done();
   };
 
-
-
   const options = {
-    input: instream,
+    input: inReplStream,
     output: outReplStream,
     prompt: '',
     writer: writer
@@ -125,8 +141,10 @@ const startRepl = function(instream, outstream) {
     globalVariableChecker();
     this.push(chunk);
     done();
+    return;
   };
 
+  instream.pipe(inReplStream);
   outReplStream.pipe(outTripStream).pipe(outstream);
 
   // generate hash from data
