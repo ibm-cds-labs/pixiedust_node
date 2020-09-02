@@ -21,4 +21,4 @@ setup(name='pixiedust_node',
       packages=find_packages(),
       include_package_data=False,
       zip_safe=False,
-      cmdclass={'install': NPMInstall})
+      cmdclass={'npm_install': NPMInstall})
