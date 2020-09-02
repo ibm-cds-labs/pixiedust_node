@@ -19,6 +19,9 @@ from pixiedust.utils.shellAccess import ShellAccess
 
 doneNode = False
 doneLock = ReadWriteLock() 
+numpyFiles = []
+
+
 
 RESERVED = ['true', 'false','self','this','In','Out']
 
@@ -84,6 +87,8 @@ class VarWatcher(object):
                     np.save(loc, v)
                     self.n.write("var " + key + " = require('npy-js').readNumpyFile( '" + loc + "' );\r\n");
                     self.setCache(key, np_hash);
+                    global numpyFiles
+                    numpyFiles.append(loc)
 
 class NodeStdReader(Thread):
     """
@@ -242,8 +247,8 @@ class Node(NodeBase):
         """
         super(Node, self).__init__()
 
-        # process that runs the Node.js code
-        args = (self.node_path,'--max-old-space-size=10000', path)
+        # process that runs the Node.js code  
+        args = (self.node_path,'--experimental-repl-await', '--max-old-space-size=10000', path)
         self.ps = self.popen(args)
         #print ("Node process id", self.ps.pid)
 
@@ -256,6 +261,11 @@ class Node(NodeBase):
         self.vw.setHome()
 
     def terminate(self):
+        global numpyFiles
+        for i in range(len(numpyFiles)):
+            if os.path.exists(numpyFiles[i]):
+                os.remove(numpyFiles[i])
+        numpyFiles = []
         self.ps.terminate()
 
     def write(self, s):
