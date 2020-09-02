@@ -1,10 +1,12 @@
 from setuptools import setup, find_packages
+import subprocess
+import os
 from setuptools.command.build_py import build_py
 
 class NPMInstall(build_py):
     def run(self):
-        self.run_command('npm install')
-        build_py.run(self)
+        p = os.path.dirname(os.path.realpath(__file__)) + '/pixiedust_node/'
+        subprocess.call(['npm', 'install'], cwd=p) 
 
 
 setup(name='pixiedust_node',
@@ -21,4 +23,4 @@ setup(name='pixiedust_node',
       packages=find_packages(),
       include_package_data=False,
       zip_safe=False,
-      cmdclass={'npm_install': NPMInstall})
+      cmdclass={'install': NPMInstall})
