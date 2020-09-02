@@ -1,4 +1,11 @@
 from setuptools import setup, find_packages
+from setuptools.command.build_py import build_py
+
+class NPMInstall(build_py):
+    def run(self):
+        self.run_command('npm install')
+        build_py.run(self)
+
 
 setup(name='pixiedust_node',
       version='0.2.6',
@@ -13,4 +20,5 @@ setup(name='pixiedust_node',
       license='Apache 2.0',
       packages=find_packages(),
       include_package_data=False,
-      zip_safe=False)
+      zip_safe=False,
+      cmdclass={'install': NPMInstall})

@@ -1,0 +1,4 @@
+pixiedust
+pandas
+ipython
+numpy

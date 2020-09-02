@@ -1,0 +1,52 @@
+<?js
+var data = obj;
+var self = this;
+?>
+<?js if (data.type && data.type.names) {?>
+    <span class="method-parameter is-pulled-right">
+        <label>Type:</label>
+        <?js= self.partial('type.tmpl', data.type.names) ?>
+    </span>
+<?js } ?>
+<h4 class="name" id="<?js= id ?>">
+    <?js= self.partial('name-link.tmpl', {id: id}) ?>
+    <?js if (data.rawAttribs && data.rawAttribs.length) {?>
+        <?js data.rawAttribs.forEach(function(attrib) { ?>
+            <span class='tag'><?js= attrib ?></span>
+        <?js }); ?>
+    <?js } ?>
+    <span class="code-name">
+        <?js= name ?>
+    </span>
+    <?js if (data.optional) { ?>
+        <span class='tag'>Optional</span>
+    <?js }; ?>
+</h4>
+
+<?js if (data.summary) { ?>
+<p class="summary"><?js= summary ?></p>
+<?js } ?>
+
+<?js if (data.description) { ?>
+<div class="description">
+    <?js= data.description ?>
+</div>
+<?js } ?>
+
+<?js= this.partial('details.tmpl', data) ?>
+
+<?js if (data.fires && fires.length) { ?>
+    <div class="method-parameter columns">
+        <div class="column is-2"><label>Fires:</label></div>
+        <div class="column is-10">
+            <ul><?js fires.forEach(function(f) { ?>
+                <li><?js= self.linkto(f) ?></li>
+            <?js }); ?></ul>
+        </div>
+    </div>
+<?js } ?>
+
+<?js if (data.examples && examples.length) { ?>
+    <h5>Example<?js= examples.length > 1? 's':'' ?></h5>
+    <?js= this.partial('examples.tmpl', data) ?>
+<?js } ?>

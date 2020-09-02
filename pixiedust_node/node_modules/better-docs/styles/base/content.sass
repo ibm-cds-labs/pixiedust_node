@@ -1,0 +1,45 @@
+.content
+  blockquote
+    margin: 30px 0 !important
+  margin-bottom: 50px
+  .signature-attributes
+    margin-left: 8px
+    margin-right: 3px
+    font-style: italic
+  header.page-title
+    p
+      font-size: 13px
+      margin: 0 0 5px
+      text-transform: uppercase
+  header p
+    font-size: 20px
+
+  h1, header.page-title h1
+    font-family: $header-font-family
+    font-size: 47px
+    font-weight: bold
+    margin: $space-md 0
+  h2
+    font-size: 26px
+    line-height: 48px
+    font-weight: bold
+    margin-bottom: 26px
+  
+  h3, h4, h5, h6
+    font-family: $header-font-family
+    font-weight: 900
+    letter-spacing: 0
+
+  code
+    color: $black
+    font-family: $code-font-family
+  
+  .container-overview .prettyprint:last-child
+    margin-bottom: 50px
+  
+  .vertical-section
+    padding: $space-lg 0
+
+#main-content-wrapper
+  @include until($desktop)
+    padding: 0 30px

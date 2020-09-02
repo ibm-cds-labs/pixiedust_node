@@ -85,7 +85,7 @@ class VarWatcher(object):
                     if os.path.exists(loc):
                         os.remove(loc)
                     np.save(loc, v)
-                    self.n.write("var " + key + " = require('npy-js').readNumpyFile( '" + loc + "' );\r\n");
+                    self.n.write("var " + key + " = readNumpyFile( '" + loc + "' );\r\n");
                     self.setCache(key, np_hash);
                     global numpyFiles
                     numpyFiles.append(loc)

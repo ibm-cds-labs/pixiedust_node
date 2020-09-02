@@ -1,0 +1,44 @@
+<?js
+var example = obj;
+var self = this;
+var uniqId = 'A' + Math.random().toString(36).substring(2) 
+               + (new Date()).getTime().toString(36);
+?>
+<div style="margin-bottom: 30px;">
+  <div id='<?js= uniqId ?>'></div>
+  <template id="T<?js= uniqId ?>">
+    <head>
+        <script src="./build/entry.js"></script>
+        <link rel="stylesheet" href="./build/entry.css">
+    </head>
+    <body>
+      <div id="A<?js= uniqId ?>"></div>
+      <script>
+        new Vue({
+          components: vueComponents,
+          render: (d, context) => {
+            return d(VueWrapper, {
+              props: {defaultCode: <?js= JSON.stringify(example.code || null) ?>}
+            })
+          },
+        }).$mount('#A<?js= uniqId ?>');
+      </script>
+    </body>
+  </template>
+
+  <iframe frameborder="0" id="F<?js= uniqId ?>" style="width: 100%;"></iframe>
+
+  <script>
+    void function() {
+      const iframe = document.getElementById('F<?js= uniqId ?>');
+      const doc = iframe.contentWindow || ( iframe.contentDocument.document || iframe.contentDocument);
+
+      doc.document.open();
+      doc.document.write($("#T<?js= uniqId ?>").html());
+      doc.document.close();
+      iframe.contentWindow.updateHeight = function(height) {
+        $(iframe).height(height + 20)
+      }
+    }()
+  </script>
+</div>
