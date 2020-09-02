@@ -1,3 +1,4 @@
+const stream = require('stream');
 const Buffer = require('buffer').Buffer;
 const repl = require('repl');
 const pkg = require('./package.json');
@@ -22,7 +23,7 @@ function abtostr(ab){
 
 const startRepl = function(instream, outstream) {
   // check for Node.js global variables and move those values to Python
-  const globalVariableChecker = function() {
+  const globalVariableChecker = async function() {
 
     // get list of global variables
     var varlist = Object.getOwnPropertyNames(r.context);
@@ -100,15 +101,33 @@ const startRepl = function(instream, outstream) {
     return '';
   };
 
+  var outReplStream = new stream.Transform();
+  outReplStream._transform = function (chunk, encoding, done){
+    this.push(chunk);
+    done();
+  };
+
+
+
   const options = {
     input: instream,
-    output: outstream,
+    output: outReplStream,
     prompt: '',
     writer: writer
   };
+
   const r = repl.start(options);
   var lastGlobal = {};
   var interval = null;
+
+  var outTripStream = new stream.Transform();
+  outTripStream._transform = function (chunk, encoding, done){
+    globalVariableChecker();
+    this.push(chunk);
+    done();
+  };
+
+  outReplStream.pipe(outTripStream).pipe(outstream);
 
   // generate hash from data
   const hash = function(data) {
