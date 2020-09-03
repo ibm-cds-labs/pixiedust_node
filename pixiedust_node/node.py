@@ -1,6 +1,6 @@
 import time
 import json
-import os
+import os, signal
 import sys
 import platform
 import subprocess
@@ -246,17 +246,18 @@ class Node(NodeBase):
         :param path: JavaScript path
         """
         super(Node, self).__init__()
-
+        self._path = path
         # process that runs the Node.js code  
         args = (self.node_path,'--experimental-repl-await', '--max-old-space-size=10000', path)
         self.ps = self.popen(args)
+        self.psid = self.ps.pid
         #print ("Node process id", self.ps.pid)
 
         # watch Python variables for changes
         self.vw = VarWatcher(get_ipython(), self.ps, self)
 
         # create thread to read this process's output
-        NodeStdReader(self.ps, self.vw)
+        self.nsr = NodeStdReader(self.ps, self.vw)
 
         self.vw.setHome()
 
@@ -274,9 +275,27 @@ class Node(NodeBase):
         doneLock.acquire_write()
         doneNode = False
         doneLock.release_write()
-        self.ps.stdin.write(s)
-        self.ps.stdin.write("\r\n")
-        self.ps.stdin.flush()
+        try:
+            self.ps.stdin.write(s)
+            self.ps.stdin.write("\r\n")
+            self.ps.stdin.flush()
+        except Exception as e:
+            #if our pipe is broken, reinitialize everything
+            if 'Broken pipe' in str(e):
+                self.nsr.stop()
+                os.kill(self.psid, signal.SIGKILL)
+                self.__init__(self._path)
+                doneLock.acquire_write()
+                doneNode = True
+                doneLock.release_write()
+                self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile } = require('npy-js');")
+                sys.stdout.flush()
+                return
+            else:
+                doneLock.acquire_write()
+                doneNode = True
+                doneLock.release_write()
+                return
         while True:
             flag = False
             doneLock.acquire_read()
@@ -289,7 +308,7 @@ class Node(NodeBase):
         self.write("\r\n.break")
 
     def clear(self):
-        self.write("\r\n.clear") 
+        self.write("\r\n.clear")
         self.vw.clearCache()
         #reset home location and reset np variables
         self.vw.setHome()
