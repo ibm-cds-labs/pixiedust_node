@@ -30,7 +30,7 @@ function abtostr(ab){
 const startRepl = function(instream, outstream) {
   // check for Node.js global variables and move those values to Python
   const globalVariableChecker = async function() {
-
+    
     // get list of global variables
     var varlist = Object.getOwnPropertyNames(r.context);
 
@@ -39,7 +39,7 @@ const startRepl = function(instream, outstream) {
     varlist.splice(0, cutoff);
 
     // if there aren't any, we're done
-    if (varlist.length === 0) return;
+    if (varlist.length === 0) return; 
 
     // for each global
     for(var i in varlist) {
