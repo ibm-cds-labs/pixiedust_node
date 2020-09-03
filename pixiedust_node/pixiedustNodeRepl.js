@@ -39,14 +39,14 @@ const startRepl = function(instream, outstream) {
     varlist.splice(0, cutoff);
 
     // if there aren't any, we're done
-    if (varlist.length === 0) return; 
-
+    if (varlist.length === 0) return;
     // for each global
     for(var i in varlist) {
 
       // turn it to JSON
       const v = varlist[i]; 
 
+      if (typeof r.context[v] === 'function') continue;
 
       if (typeof r.context[v] !== 'undefined' && typeof r.context[v].constructor !== 'undefined' && r.context[v].constructor.name === 'DataArray'){
         let key = v;
