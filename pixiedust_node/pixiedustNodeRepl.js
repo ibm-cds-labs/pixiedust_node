@@ -60,8 +60,12 @@ const startRepl = function(instream, outstream) {
         };
 
       }else{
-        const j = JSON.stringify(r.context[v]);
-
+        try{
+          const j = JSON.stringify(r.context[v]);
+        }catch(err){
+          //if we can't serialize the object, just don't bother and keep going
+          continue;
+        }
         // if it's a string
         if (typeof j === 'string' ) {
 
