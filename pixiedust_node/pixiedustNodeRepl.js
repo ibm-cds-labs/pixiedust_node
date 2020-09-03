@@ -4,7 +4,7 @@ const repl = require('repl');
 const pkg = require('./package.json');
 const crypto = require('crypto');
 const util = require('./util.js');
-const { readNumpyFile, writeNumpyFile } = require('npy-js');
+const { readNumpyFile, writeNumpyFile, buildDataArray } = require('npy-js');
 
 const magicNumber = crypto.randomBytes(128).toString('hex');
 const magicNumberCommandBytes = Buffer.from( `console.log( '${magicNumber}' );\r\n` , 'utf8');

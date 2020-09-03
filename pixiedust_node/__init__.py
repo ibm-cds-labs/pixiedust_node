@@ -43,7 +43,7 @@ class PixiedustNodeMagics(Magics):
         ShellAccess.npm = Npm()
         ShellAccess.node = self.n
         ShellAccess.npm.install( 'github:Kings-Distributed-Systems/npy-js' )
-        ShellAccess.node.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile } = require('npy-js');")
+        ShellAccess.node.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile, buildDataArray } = require('npy-js');")
 
     @cell_magic
     def node(self, line, cell):

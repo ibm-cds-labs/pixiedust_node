@@ -288,7 +288,7 @@ class Node(NodeBase):
                 doneLock.acquire_write()
                 doneNode = True
                 doneLock.release_write()
-                self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile } = require('npy-js');")
+                self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile, buildDataArray } = require('npy-js');")
                 sys.stdout.flush()
                 return
             else:
@@ -312,7 +312,7 @@ class Node(NodeBase):
         self.vw.clearCache()
         #reset home location and reset np variables
         self.vw.setHome()
-        self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile } = require('npy-js');")
+        self.write( "let { parseNumpyFile, unparseNumpyFile, readNumpyFile, writeNumpyFile, buildDataArray } = require('npy-js');")
 
     def help(self):
         self.cancel()
