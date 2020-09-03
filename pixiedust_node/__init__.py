@@ -20,6 +20,7 @@ from IPython.core.error import TryNext
 import warnings
 from .node import Node, Npm
 import os
+import subprocess
 from pixiedust.utils.shellAccess import ShellAccess
 
 # pixiedust magics to interpret cells starting with %%node
@@ -53,6 +54,11 @@ class PixiedustNodeMagics(Magics):
 def shutdown_hook(ipython):
     node.terminate()
     raise TryNext
+
+current_dir = os.path.dirname(__file__)
+if not os.path.exists(current_dir + '/node_modules'):
+    subprocess.call("npm install", shell=True, cwd=current_dir)
+
 
 try:
     with warnings.catch_warnings():
