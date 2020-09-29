@@ -1,3 +1,4 @@
+const vm     = require('vm');
 const stream = require('stream');
 const Buffer = require('buffer').Buffer;
 const repl = require('repl');
@@ -112,12 +113,7 @@ const startRepl = function(instream, outstream) {
 
   var outReplStream = new stream.Transform();
   outReplStream._transform = function (chunk, encoding, done){
-    if (!chunk.includes(magicNumber)){
-      this.push(chunk);
-    }else{
-      const obj = { _pixiedust: true, type: 'done' };
-      outstream.write('\n' + JSON.stringify(obj) + '\n');
-    }
+    this.push(chunk);
     done();
   };
 
@@ -128,10 +124,43 @@ const startRepl = function(instream, outstream) {
     done();
   };
 
+  var inRecovery = false;
+  var recoveryCMD = '';
+  async function replEval(cmd, context, filename, callback){
+    if (cmd.includes(magicNumber.toString('utf-8'))){
+      let resultFunc = async function(){
+        return await vm.runInContext(recoveryCMD, context);
+      };
+      var result;
+      resultFunc().then((res)=>{
+        result = res;
+      }).catch((e)=>{
+        console.log(e);
+      }).finally(()=>{
+        recoveryCMD = '';
+        inRecovery  = false;
+        const obj   = { _pixiedust: true, type: 'done' };
+        outstream.write('\n' + JSON.stringify(obj) + '\n');
+        callback(null, undefined);//result)
+      });
+    }else{
+      recoveryCMD += cmd;
+      callback(null, undefined);
+    };
+  };
+
+  function isRecoverableError(error) {
+    if (error.name === 'SyntaxError') {
+      return /^(Unexpected end of input|Unexpected token)/.test(error.message);
+    }
+    return false;
+  }
+
   const options = {
     input: inReplStream,
     output: outReplStream,
     prompt: '',
+    eval: replEval,
     writer: writer
   };
 
