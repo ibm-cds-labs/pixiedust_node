@@ -139,9 +139,11 @@ const startRepl = function(instream, outstream) {
       }).finally(()=>{
         recoveryCMD = '';
         inRecovery  = false;
-        const obj   = { _pixiedust: true, type: 'done' };
-        outstream.write('\n' + JSON.stringify(obj) + '\n');
-        callback(null, undefined);//result)
+        globalVariableChecker().then(()=>{
+          const obj   = { _pixiedust: true, type: 'done' };
+          outstream.write('\n' + JSON.stringify(obj) + '\n');
+          callback(null, undefined);//result)
+        });
       });
     }else{
       recoveryCMD += cmd;
