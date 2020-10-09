@@ -18,7 +18,7 @@ from pixiedust.utils.environment import Environment
 from pixiedust.utils.shellAccess import ShellAccess
 
 doneNode = False
-doneLock = ReadWriteLock() 
+doneLock = ReadWriteLock()
 numpyFiles = []
 
 
@@ -161,9 +161,9 @@ class NodeStdReader(Thread):
                         print(line)
             except Exception as e:
                 # output the original line when we don't have JSON
-                line = line.strip()
-                if len(line) > 0:
-                    print(line)
+                test_line = line.strip().replace(' ', '')
+                if len(test_line) > 0:
+                    print(line.strip())
 
 
 

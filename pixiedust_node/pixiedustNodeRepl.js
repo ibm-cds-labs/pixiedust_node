@@ -6,10 +6,8 @@ const pkg = require('./package.json');
 const crypto = require('crypto');
 const util = require('./util.js');
 const { readNumpyFile, writeNumpyFile, buildDataArray } = require('npy-js');
-
 const magicNumber = crypto.randomBytes(128).toString('hex');
-const magicNumberCommandBytes = Buffer.from( `console.log( '${magicNumber}' );\r\n` , 'utf8');
-
+const magicNumberCommandBytes = Buffer.from( `\n\nconsole.log( '${magicNumber}' );\r\n` , 'utf8');
 
 
 
@@ -119,6 +117,10 @@ const startRepl = function(instream, outstream) {
 
   var inReplStream = new stream.Transform();
   inReplStream._transform = function (chunk, encoding, done){
+    if (typeof recoveryCMD !== 'undefined'){
+      recoveryCMD = '';
+      inRecovery = false;
+    }
     chunk = Buffer.concat([chunk, magicNumberCommandBytes]);
     this.push(chunk);
     done();
@@ -172,7 +174,7 @@ const startRepl = function(instream, outstream) {
 
   var outTripStream = new stream.Transform();
   outTripStream._transform = function (chunk, encoding, done){
-    globalVariableChecker();
+//    globalVariableChecker();
     this.push(chunk);
     done();
     return;
