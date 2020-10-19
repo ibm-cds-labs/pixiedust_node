@@ -57,10 +57,7 @@ def shutdown_hook(ipython):
 
 current_dir = os.path.dirname(__file__)
 if not os.path.exists(current_dir + '/node_modules'):
-    subprocess.call("npm install", shell=True, cwd=current_dir)
-if os.path.exists(current_dir + '/node_modules/npy-js/'):
-    print("NPY-JS could not be found, npm installing")
-    subprocess.call("npm install", shell=True, cwd=current_dir)
+    subprocess.call("npm install --unsafe-perm", shell=True, cwd=current_dir)
 
 
 try:
