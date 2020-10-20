@@ -131,17 +131,25 @@ const startRepl = function(instream, outstream) {
   async function replEval(cmd, context, filename, callback){
     if (cmd.includes(magicNumber.toString('utf-8'))){
       let resultFunc = async function(){
-        return await vm.runInContext(recoveryCMD, context);
+        try{
+          let r = await vm.runInContext(recoveryCMD, context);
+        }catch(err){
+          throw err;
+        }
+        return r;
       };
       var result;
       resultFunc().then((res)=>{
         result = res;
       }).catch((e)=>{
+        console.log("Problem evaluating node context.");
         console.log(e);
       }).finally(()=>{
         recoveryCMD = '';
         inRecovery  = false;
-        globalVariableChecker().then(()=>{
+        globalVariableChecker().catch((err)=>{
+          console.log(err);
+        }).finally(()=>{
           const obj   = { _pixiedust: true, type: 'done' };
           outstream.write('\n' + JSON.stringify(obj) + '\n');
           callback(null, undefined);//result)
